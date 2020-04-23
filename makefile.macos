@@ -1,0 +1,47 @@
+#$ xcrun --show-sdk-path
+#$ export SDKROOT=macosx10.13
+
+
+
+_: station cast receive
+
+http.o : http.c
+	gcc -c http.c
+
+station: station.cpp http.o
+	g++ -std=c++14 station.cpp http.o -o station
+
+cast: cast.cpp http.o
+	g++ -std=c++14 -I/opt/local/include -D_THREAD_SAFE cast.cpp http.o -o cast \
+	/opt/local/lib/libSDL2.a \
+	/opt/local/lib/libmp3lame.a \
+	-liconv \
+	-Wl,-framework,CoreAudio \
+	-Wl,-framework,AudioToolbox \
+	-Wl,-framework,ForceFeedback \
+	-Wl,-framework,CoreVideo \
+	-Wl,-framework,Cocoa \
+	-Wl,-framework,Carbon \
+	-Wl,-framework,IOKit \
+	-Wl,-weak_framework,QuartzCore \
+	-Wl,-weak_framework,Metal
+
+receive: receive.cpp http.o
+	g++ -std=c++14 -I/opt/local/include -D_THREAD_SAFE receive.cpp http.o -o receive \
+	/opt/local/lib/libSDL2.a \
+	/opt/local/lib/libmp3lame.a \
+	-liconv \
+	-Wl,-framework,CoreAudio \
+	-Wl,-framework,AudioToolbox \
+	-Wl,-framework,ForceFeedback \
+	-Wl,-framework,CoreVideo \
+	-Wl,-framework,Cocoa \
+	-Wl,-framework,Carbon \
+	-Wl,-framework,IOKit \
+	-Wl,-weak_framework,QuartzCore \
+	-Wl,-weak_framework,Metal
+
+clean:
+	rm station cast receive *.o
+
+

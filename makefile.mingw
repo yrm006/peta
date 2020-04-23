@@ -1,0 +1,27 @@
+
+
+
+_: station.exe cast.exe receive.exe
+
+http.obj : http.c
+	gcc -c http.c -o http.obj
+
+station.exe: station.cpp http.obj
+	g++ -static -std=c++14 station.cpp http.obj -o station.exe \
+	-lws2_32
+
+cast.exe: cast.cpp http.obj
+	g++ -std=c++14 -I/opt/local/include -D_THREAD_SAFE -Dmain=SDL_main cast.cpp http.obj -o cast.exe \
+	/mingw64/lib/libSDL2.a \
+	/mingw64/lib/libmp3lame.a \
+	-lws2_32 -lmingw32 -ldxerr8 -ldinput8 -lshell32 -lsetupapi -ladvapi32 -luuid -lversion \
+	-loleaut32 -lole32 -limm32 -lwinmm -lgdi32 -luser32 -lm -Wl,--no-undefined -pipe -lmingw32 -lSDL2main -mwindows
+
+receive.exe: receive.cpp http.obj
+	g++ -std=c++14 -I/opt/local/include -D_THREAD_SAFE receive.cpp http.obj -o receive.exe \
+	-lws2_32 -lSDL2 -lmp3lame -liconv
+
+clean:
+	rm station.exe cast.exe receive.exe *.obj
+
+
