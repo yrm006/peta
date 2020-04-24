@@ -47,6 +47,20 @@ public:
     bool isOnAir(){
         return (m_p != END);
     }
+    void addListenerCount(){
+        pthread_mutex_lock(&m_mtx);
+        {
+            ++m_nListener;
+        }
+        pthread_mutex_unlock(&m_mtx);
+    }
+    void subListenerCount(){
+        pthread_mutex_lock(&m_mtx);
+        {
+            --m_nListener;
+        }
+        pthread_mutex_unlock(&m_mtx);
+    }
     int getListenerCount(){
         return m_nListener;
     }
@@ -79,12 +93,6 @@ public:
     }
     void send(SOCKET s, http* hdr){
                                                                     fprintf(stdout, "[%s]", __func__);fflush(stdout);
-        pthread_mutex_lock(&m_mtx);
-        {
-            ++m_nListener;
-        }
-        pthread_mutex_unlock(&m_mtx);
-
         #ifdef SO_NOSIGPIPE
         int yes = 1;
         setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
@@ -97,15 +105,10 @@ public:
         ;
         ::send(s, res, strlen(res), 0);
 
-        int p = m_p;
-        while(1){
+        int p  = m_p;
+        int pn = m_p;
+        while(pn != END){
                                                                     // fprintf(stdout, "|");
-            usleep(1000*100);
-
-            int pn = m_p;
-            if(pn == END){
-                break;
-            }else
             if(p < pn){
                                                                     // fprintf(stdout, "-");
                 int n;
@@ -124,19 +127,17 @@ public:
                 p = pn;
             }else
             {}
-        }
 
-        pthread_mutex_lock(&m_mtx);
-        {
-            --m_nListener;
+            usleep(1000*100);
+            pn = m_p;
         }
-        pthread_mutex_unlock(&m_mtx);
     }
 };
 
 
 
 std::map<std::string, channel> g_oChannels;
+pthread_mutex_t                g_oChannelsMutex;
 
 
 
@@ -164,16 +165,27 @@ void* on_accept(void* arg){
 
     if(0 < http_parse(&hdr, n)){
         if(strcmp(hdr.m_pMethod, "PUT") == 0){
-            //###TODO: think about thread safe.
-            auto found = g_oChannels.find(hdr.m_pURI);
-            if(found == g_oChannels.end()){
-                channel& ch = g_oChannels[hdr.m_pURI];
+            channel* ch;
+            pthread_mutex_lock(&g_oChannelsMutex);
+            {
+                ch = (g_oChannels.find(hdr.m_pURI) == g_oChannels.end()) ? &g_oChannels[hdr.m_pURI] : NULL;
+            }
+            pthread_mutex_unlock(&g_oChannelsMutex);
+
+            if(ch){
                                                                     fprintf(stdout, "[Created:%s]", hdr.m_pURI);fflush(stdout);
+                ch->recv(s, &hdr);
 
-                ch.recv(s, &hdr);
-                while(ch.getListenerCount()) usleep(1000*1000);
-
-                g_oChannels.erase(hdr.m_pURI);
+                pthread_mutex_lock(&g_oChannelsMutex);
+                {
+                    while(ch->getListenerCount()){
+                        pthread_mutex_unlock(&g_oChannelsMutex);
+                        usleep(1000*1000);
+                        pthread_mutex_lock(&g_oChannelsMutex);
+                    }
+                    g_oChannels.erase(hdr.m_pURI);
+                }
+                pthread_mutex_unlock(&g_oChannelsMutex);
                                                                     fprintf(stdout, "[Deleted:%s]", hdr.m_pURI);fflush(stdout);
             }else{
                 char aBuf[256];
@@ -189,10 +201,20 @@ void* on_accept(void* arg){
             }
         }else
         if(strcmp(hdr.m_pMethod, "GET") == 0){
-            //###TODO: think about thread safe.
-            auto found = g_oChannels.find(hdr.m_pURI);
-            if(found != g_oChannels.end() && found->second.isOnAir()){
-                found->second.send(s, &hdr);
+            channel* ch = NULL;
+            pthread_mutex_lock(&g_oChannelsMutex);
+            {
+                auto found = g_oChannels.find(hdr.m_pURI);
+                if(found != g_oChannels.end() && found->second.isOnAir()){
+                    ch = &found->second;
+                    ch->addListenerCount();
+                }
+            }
+            pthread_mutex_unlock(&g_oChannelsMutex);
+
+            if(ch){
+                ch->send(s, &hdr);
+                ch->subListenerCount();
             }else{
                 char aBuf[256];
                 aBuf[sizeof(aBuf)-1] = '\0';                        // For safety.
@@ -246,6 +268,8 @@ int main(int argc, char *argv[]){
     WSAStartup(MAKEWORD(2, 2), &wsaData);
     #endif
 
+    pthread_mutex_init(&g_oChannelsMutex, NULL);
+
     struct sockaddr_in bindto = {};
     {
         bindto.sin_family      = PF_INET;
@@ -288,6 +312,8 @@ int main(int argc, char *argv[]){
 
 
     close(s);
+
+    pthread_mutex_destroy(&g_oChannelsMutex);
 
     #ifdef _WIN64
     WSACleanup();
