@@ -92,7 +92,7 @@ public:
         m_p = END;
     }
     void send(SOCKET s, http* hdr){
-                                                                    fprintf(stdout, "[%s]", __func__);fflush(stdout);
+                                                                    fprintf(stdout, "[%s:%d]", __func__, getListenerCount());fflush(stdout);
         #ifdef SO_NOSIGPIPE
         int yes = 1;
         setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
