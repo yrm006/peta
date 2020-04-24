@@ -29,7 +29,7 @@ int net_init(sockaddr_in* pto, const char* uri){
 
     net_sock = socket(PF_INET, SOCK_STREAM, 0);
     e = connect(net_sock, (sockaddr*)pto, sizeof(*pto));
-                                                                    if(e==-1) fprintf(stderr,"!connect:%d\n",e),exit(errno);
+                                                                    if(e==-1){ fprintf(stderr,"!connect:%d\n",e); return 0; }
 
     {
         char aBuf[256];
@@ -146,11 +146,14 @@ int mic_init() {
 
     mic_dev = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, 1), 1, &want, &have, 0);
     if(!mic_dev){
-        fprintf(stderr, "Failed to open audio: %s", SDL_GetError());
+        fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
+        #ifdef _WIN64
+        fprintf(stderr, "Check 'Setting'->'Privacy'->'Microphone'.\n");
+        #endif
         return 0;
     }else
     if (have.format != want.format) {
-        fprintf(stderr, "We didn't get the wanted format.");
+        fprintf(stderr, "We didn't get the wanted format.\n");
         return 0;
     }
 
