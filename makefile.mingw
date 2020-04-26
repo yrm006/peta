@@ -11,14 +11,14 @@ station.exe: station.cpp http.obj
 	-lws2_32
 
 cast.exe: cast.cpp http.obj
-	g++ -std=c++14 -I/opt/local/include cast.cpp http.obj -o cast.exe \
+	g++ -static -std=c++14 -I/opt/local/include cast.cpp http.obj -o cast.exe \
 	/mingw64/lib/libSDL2.a \
 	/mingw64/lib/libmp3lame.a \
 	-lws2_32 -lmingw32 -ldxerr8 -ldinput8 -lshell32 -lsetupapi -ladvapi32 -luuid -lversion \
 	-loleaut32 -lole32 -limm32 -lwinmm -lgdi32 -luser32 -lm -Wl,--no-undefined -pipe -lmingw32 -lSDL2main
 
 receive.exe: receive.cpp http.obj
-	g++ -std=c++14 -I/opt/local/include receive.cpp http.obj -o receive.exe \
+	g++ -static -std=c++14 -I/opt/local/include receive.cpp http.obj -o receive.exe \
 	/mingw64/lib/libSDL2.a \
 	/mingw64/lib/libmp3lame.a \
 	-lws2_32 -lmingw32 -ldxerr8 -ldinput8 -lshell32 -lsetupapi -ladvapi32 -luuid -lversion \

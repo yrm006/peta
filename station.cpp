@@ -32,7 +32,7 @@ extern "C"{
 
 class channel{
 protected:
-    enum{ START=0, END=0x200 };
+    enum{ START=0, END=0x1000 };
     volatile uint8_t m_buf[END];
     volatile int     m_p = END;
     volatile int     m_nListener = 0;

@@ -31,6 +31,7 @@ int net_init(sockaddr_in* pto, const char* uri){
     e = connect(net_sock, (sockaddr*)pto, sizeof(*pto));
                                                                     if(e==-1){ fprintf(stderr,"!connect:%d\n",e); return 0; }
 
+    // request
     {
         char aBuf[256];
         aBuf[sizeof(aBuf)-1] = '\0';                        // For safety.
@@ -45,13 +46,6 @@ int net_init(sockaddr_in* pto, const char* uri){
         
         send(net_sock, aBuf, n, 0);
     }
-
-    const char* req = 
-        "PUT / HTTP/1.0\r\n"
-        "content-type: audio/mpeg\r\n"
-        "\r\n"
-    ;
-    send(net_sock, req, strlen(req), 0);
 
     //response
     struct http hdr;
@@ -95,7 +89,10 @@ int mp3_init(){
     mp3_lib = lame_init();
     lame_set_num_channels(mp3_lib, 1);
     lame_set_mode(mp3_lib, MONO);
+    lame_set_in_samplerate(mp3_lib, 44100);
     lame_set_out_samplerate(mp3_lib, 8000);
+    lame_set_brate(mp3_lib, 8);
+    lame_set_quality(mp3_lib, 9);
     if( lame_init_params(mp3_lib) < 0 ){
         fprintf(stderr, "!lame_init_params\n");
         return 0;
@@ -114,13 +111,10 @@ SDL_AudioDeviceID mic_dev;
 
 void mic_cb(void *userdata, Uint8 *stream, int len) {
                                                                     // fprintf(stdout, "[%s]", __func__);fflush(stdout);
-    unsigned char buf[2048*2 + 7200];
+    unsigned char buf[(int)(1.25*2205) + 7200];
     int n = lame_encode_buffer(mp3_lib, (const short*)stream, NULL, len/2, buf, sizeof(buf));
 
-    // fprintf(stderr, "[mic_cb] len:%d, n:%d\n", len, n);
-    // fwrite(stream, len, 1, stdout);
     if(0 < n){
-        // fwrite(buf, n, 1, stdout);
                                                                     fprintf(stdout, "*");fflush(stdout);
         send(net_sock, (const char*)buf, n, 0);
     }
@@ -128,11 +122,6 @@ void mic_cb(void *userdata, Uint8 *stream, int len) {
 
 int mic_init() {
                                                                     // fprintf(stdout, "[%s]", __func__);fflush(stdout);
-    #ifdef _WIN64
-    // putenv("SDL_AUDIODRIVER=DirectSound");
-    // CoInitialize(NULL);
-    #endif
-
     SDL_Init(SDL_INIT_AUDIO);
 
     SDL_AudioSpec want, have;
@@ -141,7 +130,7 @@ int mic_init() {
     want.freq = 44100;
     want.format = AUDIO_S16SYS;
     want.channels = 1;
-    want.samples = 1024;
+    want.samples = 576;
     want.callback = mic_cb;
 
     mic_dev = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, 1), 1, &want, &have, 0);
