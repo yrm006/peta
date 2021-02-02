@@ -30,6 +30,14 @@ This radio system consists of three parts.
 * 2000: Server port.
 * CH_NAME: A channel name you listen.
 
+[or]
+
+Access to the URL in your browser.
+```
+http://127.0.0.1:2000/CH_NAME
+```
+* /CH_NAME: A channel name.(Must start with '/')
+
 ## Lisence
 BSD
 
