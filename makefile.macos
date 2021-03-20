@@ -23,6 +23,8 @@ cast: cast.cpp http.o
 	-Wl,-framework,Cocoa \
 	-Wl,-framework,Carbon \
 	-Wl,-framework,IOKit \
+	-Wl,-framework,CoreHaptics \
+	-Wl,-framework,GameController \
 	-Wl,-weak_framework,QuartzCore \
 	-Wl,-weak_framework,Metal
 
@@ -38,6 +40,8 @@ receive: receive.cpp http.o
 	-Wl,-framework,Cocoa \
 	-Wl,-framework,Carbon \
 	-Wl,-framework,IOKit \
+	-Wl,-framework,CoreHaptics \
+	-Wl,-framework,GameController \
 	-Wl,-weak_framework,QuartzCore \
 	-Wl,-weak_framework,Metal
 
